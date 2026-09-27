@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Verify Certificate</title>
+
+<style>
+body {
+    margin:0;
+    font-family:'Segoe UI', sans-serif;
+    background: radial-gradient(circle at top, #1e3c72, #2a5298);
+    color:white;
+}
+
+/* Card */
+.box {
+    width:420px;
+    margin:80px auto;
+    padding:30px;
+    border-radius:20px;
+    background: rgba(255,255,255,0.08);
+    backdrop-filter: blur(20px);
+    box-shadow:0 15px 50px rgba(0,0,0,0.4);
+    text-align:center;
+}
+
+/* Drop area */
+.drop-zone {
+    border:2px dashed rgba(255,255,255,0.5);
+    padding:25px;
+    border-radius:12px;
+    cursor:pointer;
+    transition:0.3s;
+}
+
+.drop-zone:hover {
+    border-color:#00f2fe;
+    box-shadow:0 0 15px #00f2fe;
+}
+
+input {
+    display:none;
+}
+
+/* Button */
+button {
+    margin-top:20px;
+    padding:12px 25px;
+    background: linear-gradient(45deg, #00f2fe, #4facfe);
+    border:none;
+    border-radius:10px;
+    color:white;
+    font-size:16px;
+    cursor:pointer;
+    transition:0.3s;
+}
+
+button:hover {
+    transform: scale(1.1);
+    box-shadow:0 0 15px #00f2fe;
+}
+
+/* Loader */
+.loader {
+    display:none;
+    margin:20px auto;
+    border:5px solid rgba(255,255,255,0.2);
+    border-top:5px solid #00f2fe;
+    border-radius:50%;
+    width:40px;
+    height:40px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    100% { transform: rotate(360deg); }
+}
+
+/* Result */
+.result {
+    margin-top:20px;
+    font-size:18px;
+    font-weight:bold;
+    padding:15px;
+    border-radius:10px;
+}
+
+/* Valid / Fake */
+.valid {
+    background:#16a34a;
+}
+
+.fake {
+    background:#dc2626;
+}
+
+/* Hash box */
+.hash-box {
+    background:#111;
+    padding:10px;
+    border-radius:8px;
+    font-size:13px;
+    margin-top:10px;
+    word-break: break-all;      /* FIX */
+    overflow-wrap: anywhere;
+}
+
+/* Copy button */
+.copy-btn {
+    margin-top:10px;
+    padding:6px 12px;
+    background:#4f46e5;
+    border:none;
+    border-radius:6px;
+    color:white;
+    cursor:pointer;
+}
+
+.copy-btn:hover {
+    background:#4338ca;
+}
+
+/* File name */
+.file-name {
+    margin-top:10px;
+    font-size:14px;
+    color:#ddd;
+}
+
+/* Back */
+a {
+    display:block;
+    margin-top:25px;
+    color:#ccc;
+    text-decoration:none;
+}
+
+a:hover {
+    color:white;
+}
+</style>
+
+</head>
+<body>
+
+<div class="box">
+
+<h2>✔ Verify Certificate</h2>
+
+<div class="drop-zone" onclick="document.getElementById('file').click()">
+    Click or Drag File Here
+</div>
+
+<input type="file" id="file" onchange="showFileName(this)">
+<div id="filename" class="file-name"></div>
+
+<button onclick="verifyFile()">Verify</button>
+
+<div id="loader" class="loader"></div>
+
+<div id="result"></div>
+
+<a href="/">⬅ Back</a>
+
+</div>
+
+<script>
+function showFileName(input){
+    document.getElementById("filename").innerText = input.files[0].name;
+}
+
+function copyHash(hash){
+    navigator.clipboard.writeText(hash);
+    alert("Hash copied!");
+}
+
+function verifyFile() {
+    let file = document.getElementById("file").files[0];
+
+    if (!file) {
+        alert("Select a file first!");
+        return;
+    }
+
+    let formData = new FormData();
+    formData.append("file", file);
+
+    document.getElementById("loader").style.display = "block";
+
+    fetch("/verify", {
+        method: "POST",
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        document.getElementById("loader").style.display = "none";
+
+        let resultDiv = document.getElementById("result");
+
+        let className = data.message.includes("Valid") ? "valid" : "fake";
+
+        resultDiv.className = "result " + className;
+
+        resultDiv.innerHTML = `
+            ${data.message}
+            <div class="hash-box" id="hash">${data.hash}</div>
+            <button class="copy-btn" onclick="copyHash('${data.hash}')">
+                Copy Hash
+            </button>
+        `;
+    })
+    .catch(err => {
+        alert("Error verifying file");
+    });
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,23 @@
+{% extends "base.html" %}{% block title %}Notifications · Academic Credential Vault{% endblock %}
+{% block breadcrumb %}My vault / Notifications{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div><h1>Notifications</h1><p>Updates about your credentials and account.</p></div>
+  {% if unread_count %}<form method="post" action="{{ url_for('student.notifications_read_all') }}">{{ ui.csrf() }}<button class="btn btn-secondary">{{ ui.icon("check") }}Mark all as read</button></form>{% endif %}
+</div>
+<section class="card">
+  {% if notifications %}
+  <ul class="list">
+    {% for n in notifications %}
+    <li class="list-item notification {% if not n.is_read %}unread{% endif %}">
+      <span class="list-icon">{{ ui.icon({'credential_issued': 'award', 'credential_linked': 'link', 'credential_revoked': 'ban'}.get(n.event_type, 'bell')) }}</span>
+      <div class="grow"><div class="cell-title">{{ n.event_type|replace('_', ' ')|capitalize }}{% if not n.is_read %} {{ ui.badge('info', 'new') }}{% endif %}</div><div class="cell-sub">{{ n.message }}</div></div>
+      <span class="time">{{ n.created_at|datetime }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  {% call ui.empty("bell", "You have no notifications yet", "We'll let you know when a credential is issued or its status changes.") %}{% endcall %}
+  {% endif %}
+</section>
+{% endblock %}

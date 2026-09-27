@@ -1,0 +1,25 @@
+{% extends "base.html" %}{% block title %}Claim requests · Academic Credential Vault{% endblock %}
+{% block breadcrumb %}University / Claim requests{% endblock %}
+{% block content %}
+<div class="page-header"><div><h1>Claim requests</h1><p>Students asking to link their account to a student ID. Check the name and ID against your records before approving.</p></div>
+  <nav class="pills">{% for key in ("pending", "approved", "rejected") %}<a class="pill {% if status == key %}active{% endif %}" href="{{ url_for('university.claims_page', status=key) }}">{{ key|title }}</a>{% endfor %}</nav></div>
+{% for c in claims %}
+<section class="card" data-claim-row>
+  <div class="card-header"><div class="flex"><span class="avatar">{{ c.user.full_name|initials }}</span><div><h2>{{ c.user.full_name }}</h2><p>{{ c.user.email }}{% if c.user.email_verified %} {{ ui.badge('approved', 'email verified') }}{% endif %}</p></div></div>{{ ui.badge(c.status) }}</div>
+  <dl class="dl">
+    <dt>Student ID</dt><dd class="mono">{{ c.student_identifier }}</dd>
+    <dt>Profile</dt><dd>{% if not c.profile %}No profile yet; approving creates it.{% elif c.profile.user_id and c.profile.user_id != c.user_id %}{{ ui.badge('invalid', 'linked to another account') }}{% elif c.profile.user_id %}Already linked to this student{% else %}Exists, not yet linked{% endif %}</dd>
+    {% if c.message %}<dt>Message</dt><dd>{{ c.message }}</dd>{% endif %}
+    <dt>Submitted</dt><dd>{{ c.created_at|datetime }}</dd>
+    {% if c.review_note %}<dt>Review note</dt><dd>{{ c.review_note }}</dd>{% endif %}
+  </dl>
+  {% if c.status == 'pending' %}<hr>
+  <form method="post" action="{{ url_for('university.review_claim', claim_id=c.id) }}">{{ ui.csrf() }}
+    <div class="field"><label for="note-{{ c.id }}">Note <span class="optional">(required to reject; shown to the student)</span></label><input id="note-{{ c.id }}" name="review_note" maxlength="500"></div>
+    <div class="form-actions"><button class="btn btn-success" name="decision" value="approved">{{ ui.icon("check") }}Approve and link</button><button class="btn btn-danger" name="decision" value="rejected">{{ ui.icon("x") }}Reject</button></div>
+  </form>{% endif %}
+</section>
+{% else %}
+<section class="card">{% call ui.empty("user-plus", "No " ~ status ~ " claims") %}{% endcall %}</section>
+{% endfor %}
+{% endblock %}

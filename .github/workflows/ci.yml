@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+      - name: Run tests with coverage
+        run: pytest --cov=vault --cov-report=term-missing --cov-fail-under=85
+      - name: Migrations apply cleanly and match the models
+        env:
+          DATABASE_URL: sqlite:///ci-migrations.db
+          SIGNING_KEY_FILE: ci-signing-key.pem
+        run: |
+          flask --app app db upgrade -d migrations
+          flask --app app db check -d migrations
+          flask --app app db downgrade base -d migrations
+
+  postgres:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: credential_vault
+          POSTGRES_USER: acv
+          POSTGRES_PASSWORD: acv
+        ports: ["5432:5432"]
+        options: --health-cmd "pg_isready -U acv" --health-interval 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Migrate, check, and seed on PostgreSQL
+        env:
+          DATABASE_URL: postgresql+psycopg://acv:acv@localhost:5432/credential_vault
+          SIGNING_KEY_FILE: ci-signing-key.pem
+        run: |
+          flask --app app db upgrade -d migrations
+          flask --app app db check -d migrations
+          flask --app app seed-demo
+          flask --app app anchor-credentials
+          flask --app app integrity-scan

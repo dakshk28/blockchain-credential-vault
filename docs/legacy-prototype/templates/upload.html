@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Upload Certificate</title>
+
+<style>
+body {
+    margin:0;
+    font-family:'Segoe UI', sans-serif;
+    background: radial-gradient(circle at top, #1e3c72, #2a5298);
+    color:white;
+}
+
+/* Center box */
+.box {
+    width:400px;
+    margin:80px auto;
+    padding:30px;
+    border-radius:20px;
+    background: rgba(255,255,255,0.08);
+    backdrop-filter: blur(20px);
+    box-shadow:0 15px 50px rgba(0,0,0,0.4);
+    text-align:center;
+}
+
+/* Title */
+h2 {
+    margin-bottom:20px;
+}
+
+/* Drag zone */
+.drop-zone {
+    border:2px dashed rgba(255,255,255,0.5);
+    padding:25px;
+    border-radius:12px;
+    cursor:pointer;
+    transition:0.3s;
+}
+
+.drop-zone:hover {
+    border-color:#00f2fe;
+    box-shadow:0 0 15px #00f2fe;
+}
+
+/* Hidden file input */
+input {
+    display:none;
+}
+
+/* Button */
+button {
+    margin-top:20px;
+    padding:12px 25px;
+    background: linear-gradient(45deg, #00f2fe, #4facfe);
+    border:none;
+    border-radius:10px;
+    color:white;
+    font-size:16px;
+    cursor:pointer;
+    transition:0.3s;
+}
+
+button:hover {
+    transform: scale(1.1);
+    box-shadow:0 0 15px #00f2fe;
+}
+
+/* File name */
+.file-name {
+    margin-top:10px;
+    font-size:14px;
+    color:#ddd;
+}
+
+/* Back link */
+a {
+    display:block;
+    margin-top:25px;
+    color:#ccc;
+    text-decoration:none;
+}
+
+a:hover {
+    color:white;
+}
+
+/* Loader */
+.loader {
+    display:none;
+    margin:20px auto;
+    border:5px solid rgba(255,255,255,0.2);
+    border-top:5px solid #00f2fe;
+    border-radius:50%;
+    width:40px;
+    height:40px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    100% { transform: rotate(360deg); }
+}
+
+/* Result */
+.result {
+    margin-top:20px;
+    font-size:14px;
+    word-break: break-all;
+}
+</style>
+
+</head>
+<body>
+
+<div class="box">
+
+<h2>📜 Upload Certificate</h2>
+
+<!-- Drag Area -->
+<div class="drop-zone" onclick="document.getElementById('file').click()">
+    Click or Drag File Here
+</div>
+
+<input type="file" id="file" onchange="showFileName(this)">
+
+<div id="filename" class="file-name"></div>
+
+<button onclick="uploadFile()">Upload</button>
+
+<div id="loader" class="loader"></div>
+
+<div id="result" class="result"></div>
+
+<a href="/">⬅ Back</a>
+
+</div>
+
+<script>
+function showFileName(input){
+    document.getElementById("filename").innerText = input.files[0].name;
+}
+
+function uploadFile() {
+    let file = document.getElementById("file").files[0];
+
+    if (!file) {
+        alert("Select a file first!");
+        return;
+    }
+
+    let formData = new FormData();
+    formData.append("file", file);
+
+    document.getElementById("loader").style.display = "block";
+
+    fetch("/upload", {
+        method: "POST",
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        document.getElementById("loader").style.display = "none";
+
+        document.getElementById("result").innerHTML =
+            `<b>${data.message}</b><br><br>Hash:<br>${data.hash}`;
+    })
+    .catch(err => {
+        alert("Error uploading");
+    });
+}
+</script>
+
+</body>
+</html>

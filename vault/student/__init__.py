@@ -1,0 +1,1 @@
+"""Student certificate-vault module."""

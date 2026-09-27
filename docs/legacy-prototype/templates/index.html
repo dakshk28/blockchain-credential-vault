@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Credential Vault</title>
+
+<style>
+body {
+    margin:0;
+    font-family: 'Segoe UI', sans-serif;
+    background: radial-gradient(circle at top, #1e3c72, #2a5298);
+    color:white;
+    overflow:hidden;
+}
+
+/* Navbar */
+.navbar {
+    text-align:center;
+    padding:20px;
+    font-size:24px;
+    font-weight:bold;
+    background: rgba(255,255,255,0.05);
+    backdrop-filter: blur(10px);
+    letter-spacing:1px;
+}
+
+/* Center container */
+.container {
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:80vh;
+    gap:50px;
+}
+
+/* Glass cards */
+.card {
+    width:260px;
+    height:150px;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    text-align:center;
+    border-radius:20px;
+    background: rgba(255,255,255,0.08);
+    backdrop-filter: blur(20px);
+    box-shadow:0 10px 40px rgba(0,0,0,0.4);
+    transition:0.4s;
+    cursor:pointer;
+    position:relative;
+    overflow:hidden;
+}
+
+/* Glow effect */
+.card::before {
+    content:"";
+    position:absolute;
+    width:200%;
+    height:200%;
+    background: linear-gradient(45deg, #00f2fe, #4facfe, #43e97b, #38f9d7);
+    top:-50%;
+    left:-50%;
+    z-index:0;
+    opacity:0;
+    transition:0.5s;
+}
+
+.card:hover::before {
+    opacity:0.2;
+}
+
+/* Hover animation */
+.card:hover {
+    transform: translateY(-10px) scale(1.05);
+    box-shadow:0 20px 60px rgba(0,0,0,0.6);
+}
+
+/* Text */
+.card a {
+    position:relative;
+    z-index:1;
+    text-decoration:none;
+    color:white;
+    font-size:20px;
+    font-weight:bold;
+}
+
+/* Floating animation */
+@keyframes float {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+    100% { transform: translateY(0px); }
+}
+
+.card:nth-child(1) {
+    animation: float 4s ease-in-out infinite;
+}
+.card:nth-child(2) {
+    animation: float 4s ease-in-out infinite 1s;
+}
+
+/* Background particles (simple) */
+body::after {
+    content:"";
+    position:absolute;
+    width:100%;
+    height:100%;
+    background: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
+    background-size: 50px 50px;
+    top:0;
+    left:0;
+    z-index:-1;
+}
+</style>
+
+</head>
+<body>
+
+<div class="navbar">📜 Academic Credential Vault</div>
+
+<div class="container">
+
+<div class="card">
+    <a href="/upload">⬆ Upload Certificate</a>
+</div>
+
+<div class="card">
+    <a href="/verify">✔ Verify Certificate</a>
+</div>
+
+</div>
+
+</body>
+</html>

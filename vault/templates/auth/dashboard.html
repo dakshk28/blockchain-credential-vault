@@ -1,0 +1,87 @@
+{% extends "base.html" %}{% block title %}Dashboard · Academic Credential Vault{% endblock %}
+{% block breadcrumb %}Dashboard{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div><div class="eyebrow">{{ current_user.role }} dashboard</div><h1>Welcome, {{ current_user.full_name.split()[0] }}</h1>
+    <p>{% if current_user.role == 'student' %}Your verified academic credentials in one place.{% elif current_user.role == 'issuer' %}Issue and manage your institution's credentials.{% else %}Platform governance, monitoring, and reporting.{% endif %}</p></div>
+</div>
+
+{% if current_user.role == 'student' %}
+  <div class="stats">
+    {{ ui.stat(total, "Credentials", "award") }}
+    {{ ui.stat(active, "Active", "check", "success") }}
+    {{ ui.stat(institutions, "Institutions", "building", "warning") }}
+  </div>
+  <div class="grid-3-1">
+    <section class="card">
+      <div class="card-header"><div><h2>Recent certificates</h2><p>Issued to your linked student profiles.</p></div><a class="btn btn-secondary btn-sm" href="{{ url_for('student.vault_page') }}">View all</a></div>
+      {% if credentials %}
+        <ul class="list">{% for c in credentials %}
+          <li class="list-item"><span class="list-icon">{{ ui.icon("award") }}</span><div class="grow"><div class="cell-title truncate">{{ c.title }}</div><div class="cell-sub">{{ c.institution.name }} · {{ c.issue_date|date }}</div></div>{{ ui.badge(c.effective_status) }}</li>
+        {% endfor %}</ul>
+      {% else %}
+        {% call ui.empty("award", "No certificates yet", "Ask your university to link your student ID to this account, or submit a claim.") %}{% if has_endpoint('student.claim_page') %}<a class="btn" href="{{ url_for('student.claim_page') }}">Claim a credential</a>{% endif %}{% endcall %}
+      {% endif %}
+    </section>
+    <section class="card">
+      <div class="card-header"><h2>Notifications</h2><a class="small" href="{{ url_for('student.notifications_page') }}">All</a></div>
+      {% if notifications %}<ul class="list">{% for n in notifications %}<li class="list-item"><div class="grow"><div class="cell-title small">{{ n.event_type|replace('_', ' ')|capitalize }}</div><div class="cell-sub">{{ n.message }}</div></div></li>{% endfor %}</ul>
+      {% else %}<p class="muted small">You're all caught up.</p>{% endif %}
+    </section>
+  </div>
+
+{% elif current_user.role == 'issuer' %}
+  {% if issuer_status != 'approved' %}
+    <section class="card">{% call ui.empty("clock", "Awaiting verification", "Your institution is " ~ (issuer_status or "not registered") ~ ". An administrator must approve it before you can issue credentials.") %}{% endcall %}</section>
+  {% else %}
+    <div class="stats">
+      {{ ui.stat(counts.get('active', 0), "Active credentials", "award", "success") }}
+      {{ ui.stat(counts.get('revoked', 0), "Revoked", "ban", "danger") }}
+      {{ ui.stat(counts.get('replaced', 0), "Replaced", "refresh", "warning") }}
+      {{ ui.stat(students, "Student profiles", "users") }}
+    </div>
+    <div class="grid-3-1">
+      <section class="card card-flush">
+        <div class="card-header"><div><h2>Recently issued</h2><p>{{ institution.name }} ({{ institution.code }})</p></div><a class="btn btn-sm" href="{{ url_for('university.workspace') }}">{{ ui.icon("plus") }}Issue</a></div>
+        {% if recent %}<div class="table-wrap mt-1"><table class="table"><thead><tr><th>Credential</th><th>Student</th><th>Status</th></tr></thead><tbody>
+          {% for c in recent %}<tr><td><div class="cell-title">{{ c.title }}</div><div class="cell-sub mono">{{ c.credential_id }}</div></td><td>{{ c.student_profile.student_identifier if c.student_profile else "—" }}</td><td>{{ ui.badge(c.effective_status) }}</td></tr>{% endfor %}
+        </tbody></table></div>
+        {% else %}{% call ui.empty("award", "Nothing issued yet", "Add a student and issue your first credential.") %}{% endcall %}{% endif %}
+      </section>
+      <section class="card">
+        <h2>Quick actions</h2>
+        <div class="stack">
+          <a class="btn btn-secondary btn-block" href="{{ url_for('university.workspace') }}">{{ ui.icon("building") }}Open workspace</a>
+          <a class="btn btn-secondary btn-block" href="{{ url_for('university.templates_page') }}">{{ ui.icon("layers") }}Manage templates</a>
+          {% if has_endpoint('university.bulk_page') %}<a class="btn btn-secondary btn-block" href="{{ url_for('university.bulk_page') }}">{{ ui.icon("upload") }}Bulk issuance</a>{% endif %}
+        </div>
+      </section>
+    </div>
+  {% endif %}
+
+{% elif current_user.role == 'admin' %}
+  <div class="stats">
+    {{ ui.stat(pending, "Pending reviews", "clock", "warning") }}
+    {{ ui.stat(institutions, "Verified universities", "building", "success") }}
+    {{ ui.stat(counts.values()|sum, "Credentials", "award") }}
+    {{ ui.stat(users, "Users", "users") }}
+  </div>
+  <div class="grid-3-1">
+    <section class="card card-flush">
+      <div class="card-header"><div><h2>Latest audit events</h2><p>Every event is hash-chained to the one before it.</p></div></div>
+      <div class="table-wrap mt-1"><table class="table"><thead><tr><th>#</th><th>Event</th><th>When</th><th>Hash</th></tr></thead><tbody>
+        {% for e in events %}<tr><td>{{ e.id }}</td><td>{{ e.event_type|replace('_', ' ') }}</td><td class="time">{{ e.created_at|datetime }}</td><td class="mono subtle">{{ e.event_hash[:12] }}…</td></tr>
+        {% else %}<tr><td colspan="4" class="muted">No events yet.</td></tr>{% endfor %}
+      </tbody></table></div>
+    </section>
+    <section class="card">
+      <h2>Governance</h2>
+      <div class="stack">
+        <a class="btn btn-block {{ '' if pending else 'btn-secondary' }}" href="{{ url_for('auth.university_reviews') }}">{{ ui.icon("building") }}Review universities{% if pending %} ({{ pending }}){% endif %}</a>
+        <a class="btn btn-secondary btn-block" href="{{ url_for('auth.users_page') }}">{{ ui.icon("users") }}Manage users</a>
+        <a class="btn btn-secondary btn-block" href="{{ url_for('auth.reports') }}">{{ ui.icon("chart") }}Reports</a>
+      </div>
+    </section>
+  </div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,9 @@
+{% extends "base.html" %}{% block title %}{{ title }} · Academic Credential Vault{% endblock %}
+{% block content %}
+<div class="error-page">
+  <div class="error-code">{{ status }}</div>
+  <h1>{{ title }}</h1>
+  <p class="muted">{{ message }}</p>
+  <div class="actions"><a class="btn" href="{{ url_for('auth.dashboard') if current_user.is_authenticated else url_for('verification.home') }}">{{ "Back to dashboard" if current_user.is_authenticated else "Go to home page" }}</a>{% if status == 401 %}<a class="btn btn-secondary" href="{{ url_for('auth.login_page') }}">Log in</a>{% endif %}</div>
+</div>
+{% endblock %}

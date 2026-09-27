@@ -1,0 +1,37 @@
+{% extends "base.html" %}{% block title %}Bulk issuance · Academic Credential Vault{% endblock %}
+{% block breadcrumb %}University / Bulk issuance{% endblock %}
+{% block content %}
+<div class="page-header"><div><h1>Bulk issuance</h1><p>Issue the same certificate PDF to many students from one CSV file.</p></div>
+  <a class="btn btn-secondary" href="{{ url_for('university.bulk_sample') }}">{{ ui.icon("download") }}Sample CSV</a></div>
+{% if result %}
+<section class="card card-flush">
+  <div class="card-header"><div><h2>Result</h2><p>{{ result.created|length }} issued · {{ result.errors|length }} skipped</p></div></div>
+  {% if result.errors %}<div class="card-pad">{% for e in result.errors %}<div class="alert alert-warning">{{ ui.icon("alert") }}<span>Row {{ e.row }}: {{ e.error }}</span></div>{% endfor %}</div>{% endif %}
+  {% if result.created %}<div class="table-wrap"><table class="table"><thead><tr><th>Credential ID</th><th>Student</th><th>Title</th></tr></thead><tbody>
+    {% for c in result.created %}<tr data-bulk-row><td class="mono"><a href="{{ url_for('university.credential_detail', credential_id=c.credential_id) }}">{{ c.credential_id }}</a></td><td>{{ c.student_profile.student_identifier }}</td><td>{{ c.title }}</td></tr>{% endfor %}
+  </tbody></table></div>{% endif %}
+</section>
+{% endif %}
+<div class="grid-3-1">
+  <section class="card">
+    <form method="post" enctype="multipart/form-data">{{ ui.csrf() }}
+      <div class="form-row">
+        <div class="field"><label for="title">Default title</label><input id="title" name="title" placeholder="Used when a row's title is blank"></div>
+        <div class="field"><label for="programme">Default programme</label><input id="programme" name="programme" placeholder="Used when a row's programme is blank"></div>
+      </div>
+      <div class="form-row">
+        <div class="field"><span class="label">Students CSV</span>{{ ui.dropzone("students_csv", accept=".csv,text/csv", label="Drop the CSV here", hint="UTF-8, with a student_identifier column") }}</div>
+        <div class="field"><span class="label">Certificate PDF</span>{{ ui.dropzone("document") }}</div>
+      </div>
+      <button class="btn btn-lg">{{ ui.icon("upload") }}Issue to all students</button>
+    </form>
+  </section>
+  <section class="card">
+    <h2>CSV format</h2>
+    <p class="small muted">One row per student. New identifiers create student profiles automatically. Blank rows are reported and skipped. The whole batch is saved in one transaction.</p>
+    <pre class="code">student_identifier,title,programme
+CS-2026-001,B.Tech,Computer Science
+CS-2026-002,,</pre>
+  </section>
+</div>
+{% endblock %}

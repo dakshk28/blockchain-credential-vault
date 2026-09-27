@@ -1,0 +1,23 @@
+{% extends "base.html" %}{% block title %}Integrity monitor · Academic Credential Vault{% endblock %}
+{% block breadcrumb %}Monitoring / Integrity monitor{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div><h1>File integrity monitor</h1><p>Re-hashes every stored PDF and compares it with the SHA-256 baseline recorded at issuance.</p></div>
+  <form method="post" action="{{ url_for('integrity.run_page') }}">{{ ui.csrf() }}<button class="btn">{{ ui.icon("refresh") }}Run scan now</button></form>
+</div>
+{% if incidents %}<div class="alert alert-error">{{ ui.icon("alert") }}<span><strong>{{ incidents }} incident(s)</strong> need attention: stored documents were modified, deleted, or became unreadable.</span></div>{% endif %}
+<div class="stats">
+  {{ ui.stat(counts.get('unchanged', 0), "Unchanged", "check", "success") }}
+  {{ ui.stat(counts.get('modified', 0), "Modified", "alert", "danger") }}
+  {{ ui.stat(counts.get('missing', 0), "Missing", "x", "danger") }}
+  {{ ui.stat(last_run|datetime if last_run else "Never", "Last scan", "clock") }}
+</div>
+<section class="card card-flush">
+  <div class="card-header"><div><h2>Latest result per document</h2><p>Incidents are listed first. Run <code>flask integrity-scan</code> from cron for scheduled checks.</p></div></div>
+  {% if checks %}
+  <div class="table-wrap mt-1"><table class="table"><thead><tr><th>Credential</th><th>Institution</th><th>Result</th><th>Checked</th><th>Details</th></tr></thead><tbody>
+    {% for check in checks %}<tr><td><div class="cell-title">{{ check.credential.title }}</div><div class="cell-sub mono">{{ check.credential.credential_id }}</div></td><td>{{ check.credential.institution.code }}</td><td>{{ ui.badge(check.result) }}</td><td class="time">{{ check.checked_at|datetime }}</td><td class="small muted">{{ check.details }}</td></tr>{% endfor %}
+  </tbody></table></div>
+  {% else %}{% call ui.empty("activity", "No scans yet", "Run the first scan to record a result for every active credential.") %}{% endcall %}{% endif %}
+</section>
+{% endblock %}

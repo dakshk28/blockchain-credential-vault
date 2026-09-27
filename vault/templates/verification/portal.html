@@ -1,0 +1,18 @@
+{% extends "base.html" %}{% block title %}Verify a credential · Academic Credential Vault{% endblock %}
+{% block breadcrumb %}Public / Verify a credential{% endblock %}
+{% block content %}
+<div class="medium">
+  <div class="center mb-1"><div class="eyebrow">Public verification</div><h1>Verify an academic credential</h1><p class="muted">Check a credential's status using the ID printed on the certificate, or scan its QR code. No account is needed.</p></div>
+  <section class="card">
+    <form method="get" action="{{ url_for('verification.portal') }}">
+      <div class="field"><label for="id">Credential ID</label>
+        <div class="input-group"><input id="id" name="id" placeholder="ACV-2026-XXXXXXXXXX" autocomplete="off" required autofocus class="mono"><button class="btn">{{ ui.icon("search") }}Verify</button></div>
+        <div class="hint">IDs look like <code>ACV-2026-1A2B3C4D5E</code>. Letter case and spaces are ignored.</div></div>
+    </form>
+  </section>
+  <div class="grid">
+    <div class="feature"><div class="stat-icon">{{ ui.icon("qr") }}</div><h3>Scan the QR code</h3><p>Every certificate's QR code opens its verification page directly.</p></div>
+    <div class="feature"><div class="stat-icon success">{{ ui.icon("file") }}</div><h3>Check the document</h3><p>Upload the PDF you received to confirm it matches the original byte for byte.</p></div>
+  </div>
+</div>
+{% endblock %}

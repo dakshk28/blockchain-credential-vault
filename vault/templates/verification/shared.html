@@ -1,0 +1,20 @@
+{% extends "base.html" %}{% set layout = "public" %}{% block title %}Shared credential · Academic Credential Vault{% endblock %}
+{% block content %}
+<div class="medium">
+  <section class="verdict verdict-{{ 'active' if status == 'active' else ('expired' if status == 'expired' else ('replaced' if status == 'replaced' else 'revoked')) }}">
+    {{ ui.icon("check" if status == 'active' else "alert", "icon-xl") }}
+    <div><h1>{{ holder.full_name }} shared a {{ "valid" if status == 'active' else status }} credential</h1><p>This private link was created by the credential holder and expires {{ link.expires_at|datetime }} (UTC).</p></div>
+  </section>
+  <section class="card">
+    <div class="card-header"><div><div class="eyebrow">{{ credential.institution.name }}</div><h2>{{ credential.title }}</h2><p>{{ credential.programme }}</p></div>{{ ui.badge(status) }}</div>
+    <dl class="dl">
+      <dt>Holder</dt><dd>{{ holder.full_name }}</dd>
+      <dt>Credential ID</dt><dd class="mono">{{ credential.credential_id }}</dd>
+      <dt>Issue date</dt><dd>{{ credential.issue_date|date }}</dd>
+      {% if credential.expiry_date %}<dt>Expiry date</dt><dd>{{ credential.expiry_date|date }}</dd>{% endif %}
+    </dl>
+    <div class="form-actions mt-1"><a class="btn" href="{{ url_for('verification.credential_page', credential_id=credential.credential_id) }}#compare">{{ ui.icon("shield") }}Verify and compare document</a></div>
+  </section>
+  <section class="card"><h2>Timeline</h2><ol class="timeline">{% for event in timeline %}<li class="timeline-{{ event.tone }}"><div class="cell-title">{{ event.label }}</div><div class="cell-sub">{{ event.date|date }}{% if event.detail %} · {{ event.detail }}{% endif %}</div></li>{% endfor %}</ol></section>
+</div>
+{% endblock %}

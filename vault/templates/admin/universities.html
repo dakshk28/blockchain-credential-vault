@@ -1,0 +1,32 @@
+{% extends "base.html" %}{% block title %}University reviews · Academic Credential Vault{% endblock %}
+{% block breadcrumb %}Governance / University reviews{% endblock %}
+{% block content %}
+<div class="page-header"><div><h1>University verification</h1><p>Approve only after independently confirming the institution and its representative.</p></div></div>
+<div class="alert">{{ ui.icon("info") }}<span>Check that the representative's email domain belongs to the institution, and confirm the request through the university's official contact channel.</span></div>
+{% for item in requests %}
+<section class="card">
+  <div class="card-header">
+    <div class="flex"><span class="list-icon">{{ ui.icon("building") }}</span><div><h2>{{ item.institution.name }}</h2><p>Code {{ item.institution.code }} · Requested {{ item.created_at|datetime }}</p></div></div>
+    {{ ui.badge(item.status) }}
+  </div>
+  <dl class="dl">
+    <dt>Representative</dt><dd>{{ item.representative.full_name }} · {{ item.representative.email }}</dd>
+    <dt>Official domain</dt><dd class="mono">{{ item.official_email_domain }}</dd>
+    {% if item.review_note %}<dt>Review note</dt><dd>{{ item.review_note }}</dd>{% endif %}
+  </dl>
+  {% if item.status == 'pending' %}
+  <hr>
+  <form method="post" action="{{ url_for('auth.review_university', request_id=item.id) }}">{{ ui.csrf() }}
+    <div class="field"><label for="note-{{ item.id }}">Review note</label><input id="note-{{ item.id }}" name="review_note" required placeholder="How the institution was verified"></div>
+    <div class="form-actions">
+      <button class="btn btn-success" name="decision" value="approved">{{ ui.icon("check") }}Approve</button>
+      <button class="btn btn-secondary" name="decision" value="suspended">Suspend</button>
+      <button class="btn btn-danger" name="decision" value="rejected">{{ ui.icon("x") }}Reject</button>
+    </div>
+  </form>
+  {% endif %}
+</section>
+{% else %}
+<section class="card">{% call ui.empty("building", "No verification requests", "New university registrations will appear here.") %}{% endcall %}</section>
+{% endfor %}
+{% endblock %}

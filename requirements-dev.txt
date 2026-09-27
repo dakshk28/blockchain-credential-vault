@@ -1,0 +1,3 @@
+# Everything needed to run the full test suite (including the in-process EVM chain) and coverage.
+-r requirements-blockchain.txt
+pytest-cov>=5

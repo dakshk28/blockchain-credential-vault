@@ -1,0 +1,22 @@
+# Secrets come from the environment or a .env file next to this file; startup fails if they are missing.
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: credential_vault
+      POSTGRES_USER: acv
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+  web:
+    build: .
+    environment:
+      DATABASE_URL: postgresql+psycopg://acv:${POSTGRES_PASSWORD}@db:5432/credential_vault
+      SECRET_KEY: ${SECRET_KEY:?set SECRET_KEY (32+ random characters)}
+      SIGNING_SECRET: ${SIGNING_SECRET:?set SIGNING_SECRET (32+ random characters)}
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+volumes:
+  postgres_data:

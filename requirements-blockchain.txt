@@ -1,0 +1,4 @@
+# On-chain anchoring (BLOCKCHAIN_ANCHOR_PROVIDER=ethereum), deployment, and the in-process test chain.
+-r requirements.txt
+web3>=7,<8
+eth-tester[py-evm]>=0.12

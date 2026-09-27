@@ -1,0 +1,40 @@
+{% extends "base.html" %}{% block title %}My certificates · Academic Credential Vault{% endblock %}
+{% block breadcrumb %}My vault / Certificates{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div><h1>My certificates</h1><p>Credentials issued to your verified student profiles.</p></div>
+  <nav class="pills" aria-label="Filter by status">
+    {% for key, label in (("", "All"), ("active", "Active"), ("expired", "Expired"), ("replaced", "Replaced"), ("revoked", "Revoked")) %}
+      <a class="pill {% if status == key %}active{% endif %}" href="{{ url_for('student.vault_page', status=key or None) }}">{{ label }}</a>
+    {% endfor %}
+  </nav>
+</div>
+{% if certificates %}
+<div class="cred-grid">
+  {% for c in certificates %}
+  <article class="cred">
+    <div class="cred-top"><span class="seal">{{ ui.icon("award", "icon-lg") }}</span>{{ ui.badge(c.effective_status) }}</div>
+    <h2 class="cred-title">{{ c.title }}</h2>
+    <div class="cred-meta">
+      <span>{{ c.programme }}</span>
+      <span>{{ ui.icon("building") }} {{ c.institution.name }}</span>
+      <span>Issued {{ c.issue_date|date }}{% if c.expiry_date %} · Expires {{ c.expiry_date|date }}{% endif %}</span>
+    </div>
+    <div class="copy-field"><span>{{ c.credential_id }}</span><button type="button" class="btn btn-ghost btn-sm" data-copy="{{ c.credential_id }}" aria-label="Copy credential ID">{{ ui.icon("copy") }}</button></div>
+    <div class="cred-actions">
+      {% if c.document_available %}<a class="btn btn-sm" href="{{ url_for('credentials.download', credential_id=c.credential_id) }}">{{ ui.icon("download") }}PDF</a>{% endif %}
+      <a class="btn btn-secondary btn-sm" href="{{ url_for('verification.portal', id=c.credential_id) if has_endpoint('verification.portal') else url_for('verification.verify', credential_id=c.credential_id) }}">{{ ui.icon("shield") }}Verify</a>
+      <a class="btn btn-secondary btn-sm" href="{{ url_for('verification.qr_code', credential_id=c.credential_id) }}">{{ ui.icon("qr") }}QR</a>
+      {% if has_endpoint('student.shares_page') and c.effective_status == 'active' %}<a class="btn btn-ghost btn-sm" href="{{ url_for('student.shares_page', credential=c.credential_id) }}">{{ ui.icon("link") }}Share</a>{% endif %}
+    </div>
+  </article>
+  {% endfor %}
+</div>
+{% else %}
+<section class="card">
+  {% call ui.empty("award", "No certificates yet" if not status else "No " ~ status ~ " certificates", "Your certificates will appear here after a verified university issues them to your student profile.") %}
+    {% if has_endpoint('student.claim_page') %}<a class="btn" href="{{ url_for('student.claim_page') }}">Claim a credential</a>{% endif %}
+  {% endcall %}
+</section>
+{% endif %}
+{% endblock %}

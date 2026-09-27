@@ -1,0 +1,7 @@
+{% extends "base.html" %}{% block title %}Credential not found · Academic Credential Vault{% endblock %}
+{% block content %}
+<div class="medium"><section class="card">
+  <div class="verdict verdict-revoked">{{ ui.icon("x", "icon-xl") }}<div><h1>No credential found</h1><p>No credential with ID <code>{{ credential_id }}</code> exists in this vault. Check the ID for typing mistakes. If it is correct, this document was not issued through this platform.</p></div></div>
+  <a class="btn btn-secondary" href="{{ url_for('verification.portal') }}">{{ ui.icon("search") }}Try another ID</a>
+</section></div>
+{% endblock %}

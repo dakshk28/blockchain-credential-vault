@@ -1,0 +1,26 @@
+{% extends "base.html" %}{% block title %}Claim a credential · Academic Credential Vault{% endblock %}
+{% block breadcrumb %}My vault / Claim a credential{% endblock %}
+{% block content %}
+<div class="page-header"><div><h1>Claim your credentials</h1><p>Ask your university to link your student ID to this account. Once approved, every credential issued to that ID appears in your vault.</p></div></div>
+<div class="grid-3-1">
+  <section class="card card-flush">
+    <div class="card-header"><h2>Your claims</h2></div>
+    {% if claims %}<ul class="list card-pad">{% for c in claims %}
+      <li class="list-item" data-claim-row><span class="list-icon">{{ ui.icon("building") }}</span>
+        <div class="grow"><div class="cell-title">{{ c.institution.name }} · <span class="mono">{{ c.student_identifier }}</span></div>
+          <div class="cell-sub">Submitted {{ c.created_at|datetime }}{% if c.review_note %} · {{ c.review_note }}{% endif %}</div></div>{{ ui.badge(c.status) }}</li>
+    {% endfor %}</ul>
+    {% else %}{% call ui.empty("user-plus", "No claims yet", "Submit one with the student ID from your university records.") %}{% endcall %}{% endif %}
+  </section>
+  <section class="card">
+    <h2>New claim</h2>
+    {% if not current_user.email_verified %}<div class="alert alert-warning">{{ ui.icon("mail") }}<span>Confirm your email address first, so the university can trust the request.</span></div>{% endif %}
+    <form method="post">{{ ui.csrf() }}
+      <div class="field"><label for="institution_id">University</label><select id="institution_id" name="institution_id" required><option value="">Choose…</option>{% for i in institutions %}<option value="{{ i.id }}">{{ i.name }} ({{ i.code }})</option>{% endfor %}</select></div>
+      <div class="field"><label for="student_identifier">Student ID</label><input id="student_identifier" name="student_identifier" required maxlength="100" placeholder="As printed on your ID card"></div>
+      <div class="field"><label for="message">Message <span class="optional">(optional)</span></label><textarea id="message" name="message" maxlength="500" placeholder="e.g. Graduated 2026, B.Tech CSE"></textarea></div>
+      <button class="btn btn-block" {% if not current_user.email_verified %}disabled{% endif %}>{{ ui.icon("user-plus") }}Submit claim</button>
+    </form>
+  </section>
+</div>
+{% endblock %}

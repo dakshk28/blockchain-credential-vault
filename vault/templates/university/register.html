@@ -1,0 +1,21 @@
+{% extends "base.html" %}{% set layout = "public" %}{% block title %}Register a university · Academic Credential Vault{% endblock %}
+{% block content %}
+<div class="medium"><div class="auth-card">
+  <div class="head"><div class="brand-mark">{{ ui.icon("building") }}</div><h1>Register your university</h1><p>An administrator verifies every institution before it can issue credentials.</p></div>
+  {% if error %}<div class="alert alert-error" role="alert">{{ ui.icon("alert") }}<span>{{ error }}</span></div>{% endif %}
+  <form method="post">{{ ui.csrf() }}
+    <h3>Institution</h3>
+    <div class="form-row">
+      <div class="field"><label for="institution_name">University name</label><input id="institution_name" name="institution_name" required></div>
+      <div class="field"><label for="institution_code">Institution code</label><input id="institution_code" name="institution_code" maxlength="32" required placeholder="e.g. IITD"><div class="hint">A short unique code, shown on credentials.</div></div>
+    </div>
+    <h3>Representative</h3>
+    <div class="form-row">
+      <div class="field"><label for="full_name">Full name</label><input id="full_name" name="full_name" required></div>
+      <div class="field"><label for="email">Official email</label><input id="email" name="email" type="email" required><div class="hint">Use your university domain; it is checked during review.</div></div>
+    </div>
+    <div class="field"><label for="password">Password</label><input id="password" name="password" type="password" minlength="12" required data-strength><div class="password-meter"><span></span></div><div class="hint">At least 12 characters, including a digit.</div></div>
+    <button class="btn btn-block btn-lg">Submit for verification</button>
+  </form>
+</div></div>
+{% endblock %}

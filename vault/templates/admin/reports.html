@@ -1,0 +1,26 @@
+{% extends "base.html" %}{% block title %}Reports · Academic Credential Vault{% endblock %}
+{% block breadcrumb %}Monitoring / Reports{% endblock %}
+{% block content %}
+{% set totals = {'active': rows|sum(attribute='active'), 'revoked': rows|sum(attribute='revoked'), 'replaced': rows|sum(attribute='replaced')} %}
+<div class="page-header">
+  <div><h1>Credential reports</h1><p>Privacy-safe counts by institution. No personal data is included.</p></div>
+  <a class="btn btn-secondary" href="{{ url_for('auth.reports_csv') }}">{{ ui.icon("download") }}Download CSV</a>
+</div>
+<div class="stats">
+  {{ ui.stat(totals.active, "Active", "award", "success") }}
+  {{ ui.stat(totals.revoked, "Revoked", "ban", "danger") }}
+  {{ ui.stat(totals.replaced, "Replaced", "refresh", "warning") }}
+  {{ ui.stat(rows|length, "Institutions", "building") }}
+</div>
+<section class="card card-flush">
+  <div class="card-header"><div><h2>By institution</h2><p><span class="legend legend-active"></span>Active <span class="legend legend-replaced"></span>Replaced <span class="legend legend-revoked"></span>Revoked</p></div></div>
+  <div class="table-wrap mt-1"><table class="table"><thead><tr><th>Institution</th><th class="num">Active</th><th class="num">Revoked</th><th class="num">Replaced</th><th>Distribution</th></tr></thead><tbody>
+    {% for row in rows %}{% set total = row.active + row.revoked + row.replaced %}
+    <tr><td><div class="cell-title">{{ row.institution }}</div><div class="cell-sub">{{ row.code }}</div></td><td class="num">{{ row.active }}</td><td class="num">{{ row.revoked }}</td><td class="num">{{ row.replaced }}</td>
+      <td>{% if total %}<svg class="bar" viewBox="0 0 100 10" preserveAspectRatio="none" role="img" aria-label="{{ row.active }} active, {{ row.replaced }} replaced, {{ row.revoked }} revoked">
+        {% set a = row.active / total * 100 %}{% set r = row.replaced / total * 100 %}
+        <rect class="seg-active" x="0" y="0" height="10" width="{{ a }}"/><rect class="seg-replaced" x="{{ a }}" y="0" height="10" width="{{ r }}"/><rect class="seg-revoked" x="{{ a + r }}" y="0" height="10" width="{{ 100 - a - r }}"/></svg>{% else %}<span class="subtle small">No credentials</span>{% endif %}</td></tr>
+    {% else %}<tr><td colspan="5" class="muted">No institutions yet.</td></tr>{% endfor %}
+  </tbody></table></div>
+</section>
+{% endblock %}

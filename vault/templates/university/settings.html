@@ -1,0 +1,21 @@
+{% extends "base.html" %}{% block title %}Branding · Academic Credential Vault{% endblock %}
+{% block breadcrumb %}University / Branding{% endblock %}
+{% block content %}
+<div class="page-header"><div><h1>Institution branding</h1><p>Shown on generated certificates and on your credentials' public verification pages.</p></div></div>
+<div class="grid-3-1">
+  <section class="card">
+    <form method="post" enctype="multipart/form-data">{{ ui.csrf() }}
+      <div class="field"><label for="accent_color">Accent colour</label><div class="flex"><input id="accent_color" name="accent_color" type="color" value="{{ institution.accent_color or '#3b5bdb' }}"><span class="small muted">Certificate border and headings.</span></div></div>
+      <div class="field"><label for="website">Official website <span class="optional">(optional)</span></label><input id="website" name="website" type="url" value="{{ institution.website or '' }}" placeholder="https://www.example.edu"><div class="hint">Verifiers use it to confirm your public signing key and contact details.</div></div>
+      <div class="field"><span class="label">Logo <span class="optional">(PNG or JPEG, up to 512 KB)</span></span>{{ ui.dropzone("logo", accept="image/png,image/jpeg", label="Drop a logo here or click to browse", hint="Square images work best", required=False) }}</div>
+      <button class="btn">{{ ui.icon("check") }}Save branding</button>
+    </form>
+  </section>
+  <section class="card center">
+    <h2>Preview</h2>
+    {% if institution.logo_key %}<img class="institution-logo institution-logo-lg" src="{{ url_for('university.logo', code=institution.code) }}" alt="Current logo">{% else %}<p class="muted small">No logo uploaded.</p>{% endif %}
+    <p class="cell-title mt-1">{{ institution.name }}</p>
+    {% if institution.accent_color %}<svg class="brand-stripe" viewBox="0 0 10 1" preserveAspectRatio="none" aria-hidden="true"><rect width="10" height="1" fill="{{ institution.accent_color }}"/></svg>{% endif %}
+  </section>
+</div>
+{% endblock %}

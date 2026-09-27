@@ -1,0 +1,37 @@
+{% extends "base.html" %}{% block title %}Share links · Academic Credential Vault{% endblock %}
+{% block breadcrumb %}My vault / Share links{% endblock %}
+{% block content %}
+<div class="page-header"><div><h1>Share links</h1><p>Give employers a private, expiring link to one credential. Revoke it at any time.</p></div></div>
+<div class="grid-3-1">
+  <section class="card card-flush">
+    <div class="card-header"><h2>Your links</h2></div>
+    {% if links %}
+    <ul class="list card-pad">
+      {% for link in links %}
+      <li class="list-item" data-share-row>
+        <span class="list-icon">{{ ui.icon("link") }}</span>
+        <div class="grow">
+          <div class="cell-title truncate">{{ link.credential.title }}</div>
+          <div class="cell-sub">{{ "Expires" if link.state == 'active' else "Expired" if link.state == 'expired' else "Revoked" }} {% if link.state != 'revoked' %}{{ link.expires_at|datetime }}{% endif %}</div>
+          {% if link.state == 'active' %}{% set url = url_for('verification.shared_page', token=link.token, _external=True) %}<div class="copy-field mt-1"><span>{{ url }}</span><button type="button" class="btn btn-ghost btn-sm" data-copy="{{ url }}" aria-label="Copy link">{{ ui.icon("copy") }}</button></div>{% endif %}
+        </div>
+        {{ ui.badge(link.state) }}
+        {% if link.state == 'active' %}<form method="post" action="{{ url_for('student.revoke_share_page', link_id=link.id) }}" data-confirm="Revoke this link? Anyone using it will lose access.">{{ ui.csrf() }}<button class="btn btn-ghost btn-sm">{{ ui.icon("ban") }}Revoke</button></form>{% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}{% call ui.empty("link", "No share links yet", "Create one to send a credential to an employer.") %}{% endcall %}{% endif %}
+  </section>
+  <section class="card">
+    <h2>New link</h2>
+    {% if credentials %}
+    <form method="post" action="{{ url_for('student.create_share_page') }}">{{ ui.csrf() }}
+      <div class="field"><label for="credential_id">Credential</label><select id="credential_id" name="credential_id" required>{% for c in credentials %}<option value="{{ c.credential_id }}" {% if c.credential_id == selected %}selected{% endif %}>{{ c.title }} · {{ c.credential_id }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="hours">Valid for</label><select id="hours" name="hours">{% for hours, label in durations.items() %}<option value="{{ hours }}" {% if hours == 72 %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+      <button class="btn btn-block">{{ ui.icon("link") }}Create link</button>
+    </form>
+    <p class="small muted mt-1">The link shows the credential's status and details. It never exposes your email or the PDF.</p>
+    {% else %}<p class="muted small">You need an active credential to create a share link.</p>{% endif %}
+  </section>
+</div>
+{% endblock %}

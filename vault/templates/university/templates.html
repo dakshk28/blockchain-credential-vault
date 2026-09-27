@@ -1,0 +1,25 @@
+{% extends "base.html" %}{% block title %}Templates · Academic Credential Vault{% endblock %}
+{% block breadcrumb %}University / Templates{% endblock %}
+{% block content %}
+<div class="page-header"><div><h1>Credential templates</h1><p>Reusable titles and programmes, private to your institution. Choose one in the issue form to prefill it.</p></div></div>
+<div class="grid-3-1">
+  <section class="card card-flush">
+    <div class="card-header"><h2>Templates</h2><span class="badge badge-plain">{{ templates|length }}</span></div>
+    {% if templates %}
+    <div class="table-wrap mt-1"><table class="table"><thead><tr><th>Name</th><th>Credential</th><th>Description</th></tr></thead><tbody>
+      {% for t in templates %}<tr><td class="cell-title">{{ t.name }}</td><td><div>{{ t.title }}</div><div class="cell-sub">{{ t.programme }}</div></td><td class="muted small">{{ t.description or "—" }}</td></tr>{% endfor %}
+    </tbody></table></div>
+    {% else %}{% call ui.empty("layers", "No templates created yet", "Create one for each degree or certificate you issue regularly.") %}{% endcall %}{% endif %}
+  </section>
+  <section class="card">
+    <h2>New template</h2>
+    <form method="post">{{ ui.csrf() }}
+      <div class="field"><label for="name">Template name</label><input id="name" name="name" required placeholder="B.Tech CSE 2026"></div>
+      <div class="field"><label for="title">Credential title</label><input id="title" name="title" required></div>
+      <div class="field"><label for="programme">Programme</label><input id="programme" name="programme" required></div>
+      <div class="field"><label for="description">Description <span class="optional">(optional)</span></label><textarea id="description" name="description"></textarea></div>
+      <button class="btn btn-block">{{ ui.icon("plus") }}Create template</button>
+    </form>
+  </section>
+</div>
+{% endblock %}

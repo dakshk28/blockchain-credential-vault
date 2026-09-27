@@ -1,0 +1,33 @@
+{% extends "base.html" %}{% block title %}Audit ledger · Academic Credential Vault{% endblock %}
+{% block breadcrumb %}Monitoring / Audit ledger{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div><h1>Audit ledger</h1><p>Each event stores the SHA-256 hash of the previous one, so editing or deleting any past record breaks the chain.</p></div>
+  <div class="actions">
+    <form method="post" action="{{ url_for('audit.validate_page') }}">{{ ui.csrf() }}<button class="btn btn-secondary">{{ ui.icon("shield") }}Validate chain</button></form>
+    <form method="post" action="{{ url_for('audit.anchor_page') }}">{{ ui.csrf() }}<button class="btn btn-secondary">{{ ui.icon("blocks") }}Anchor audit head</button></form>
+    <form method="post" action="{{ url_for('audit.anchor_credentials_page') }}">{{ ui.csrf() }}<button class="btn">{{ ui.icon("blocks") }}Anchor credentials{% if pending %} ({{ pending }}){% endif %}</button></form>
+  </div>
+</div>
+<div class="grid-3-1">
+  <section class="card card-flush">
+    <div class="card-header flex-wrap"><div><h2>Events</h2><p>{{ total }} recorded</p></div>
+      <form method="get" class="flex"><select name="type" aria-label="Event type"><option value="">All event types</option>{% for t in types %}<option value="{{ t }}" {% if t == event_type %}selected{% endif %}>{{ t|replace('_', ' ') }}</option>{% endfor %}</select><button class="btn btn-secondary btn-sm">Filter</button></form></div>
+    <div class="table-wrap mt-1"><table class="table"><thead><tr><th>#</th><th>Event</th><th>Actor</th><th>When</th><th>Hash ← previous</th></tr></thead><tbody>
+      {% for e in page.items %}<tr data-event-row><td>{{ e.id }}</td><td>{{ e.event_type|replace('_', ' ') }}</td><td class="small">{{ e.actor.email if e.actor else "system" }}</td><td class="time">{{ e.created_at|datetime }}</td>
+        <td class="mono small"><span title="{{ e.event_hash }}">{{ e.event_hash[:10] }}</span> <span class="subtle">← {{ e.previous_event_hash[:10] if e.previous_event_hash else "genesis" }}</span></td></tr>
+      {% else %}<tr><td colspan="5" class="muted">No events.</td></tr>{% endfor %}
+    </tbody></table></div>
+    {{ ui.pagination(page, 'audit.ledger_page') }}
+  </section>
+  <section class="card">
+    <h2>Anchors</h2>
+    <p class="small muted">Provider: <strong>{{ provider }}</strong>{% if provider == 'local' %} (roots stay in this database; set <code>BLOCKCHAIN_ANCHOR_PROVIDER=ethereum</code> to publish on-chain){% endif %}. {{ pending }} credential(s) waiting.</p>
+    {% if anchors %}<ul class="list">{% for a in anchors %}<li class="list-item" data-anchor-row><span class="list-icon">{{ ui.icon("blocks" if a.kind == 'credentials' else "shield") }}</span><div class="grow">
+      <div class="cell-title small">{{ "Credential batch" if a.kind == 'credentials' else "Audit head" }}{% if a.item_count %} · {{ a.item_count }} item(s){% endif %}</div>
+      <div class="mono small truncate" title="{{ a.audit_root }}">{{ a.audit_root }}</div>
+      <div class="cell-sub">{{ a.network or a.provider }} · {{ a.anchored_at|datetime }}{% if a.explorer_url %} · <a href="{{ a.explorer_url }}" target="_blank" rel="noopener">tx {{ ui.icon("external") }}</a>{% elif a.tx_hash %} · <span class="mono">{{ a.tx_hash[:14] }}…</span>{% endif %}</div></div></li>{% endfor %}</ul>
+    {% else %}<p class="muted small">No anchors yet.</p>{% endif %}
+  </section>
+</div>
+{% endblock %}

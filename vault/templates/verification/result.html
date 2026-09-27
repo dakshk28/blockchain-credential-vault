@@ -1,0 +1,91 @@
+{% extends "base.html" %}{% block title %}{{ credential.credential_id }} · Verification{% endblock %}
+{% block breadcrumb %}Public / Verification result{% endblock %}
+{% block content %}
+{% set verdicts = {
+  "active": ("active", "check", "Valid credential", "This credential was issued by a verified institution and is currently active."),
+  "expired": ("expired", "clock", "Credential expired", "This credential was genuinely issued but its validity period has ended."),
+  "revoked": ("revoked", "ban", "Credential revoked", "The issuing institution has revoked this credential. It should not be accepted."),
+  "replaced": ("replaced", "refresh", "Credential superseded", "This credential was replaced by a newer version. Ask the holder for the current one."),
+} %}
+{% set tone, icon_name, heading, explanation = verdicts.get(status, verdicts["revoked"]) %}
+{% if signature.state in ('invalid', 'legacy-invalid') or anchoring.state == 'altered' %}{% set tone, icon_name, heading, explanation = ("revoked", "alert", "Record integrity failure", "This credential's stored details no longer match what was signed and anchored. The record may have been tampered with. Do not accept it.") %}{% endif %}
+{% if comparison and not comparison.matches %}{% set tone, icon_name, heading, explanation = ("revoked", "alert", "Document does not match", "The uploaded file differs from the document on record. It may have been edited or is a different file.") %}{% endif %}
+
+<div class="medium">
+  <section class="verdict verdict-{{ tone }}" role="status">
+    {{ ui.icon(icon_name, "icon-xl") }}
+    <div><h1>{{ heading }}</h1><p>{{ explanation }}</p>
+      {% if comparison and comparison.matches %}<p><strong>{{ ui.icon("check") }} The uploaded document is identical to the original.</strong></p>{% endif %}</div>
+  </section>
+
+  <section class="card">
+    {% if credential.institution.accent_color %}<svg class="brand-stripe" viewBox="0 0 10 1" preserveAspectRatio="none" aria-hidden="true"><rect width="10" height="1" fill="{{ credential.institution.accent_color }}"/></svg>{% endif %}
+    <div class="card-header"><div class="flex">{% if credential.institution.logo_key %}<img class="institution-logo" src="{{ url_for('university.logo', code=credential.institution.code) }}" alt="{{ credential.institution.name }} logo">{% endif %}<div><div class="eyebrow">{{ credential.institution.name }}</div><h2>{{ credential.title }}</h2><p>{{ credential.programme }}</p></div></div>{{ ui.badge(status) }}</div>
+    <dl class="dl">
+      <dt>Credential ID</dt><dd class="mono">{{ credential.credential_id }}</dd>
+      <dt>Issued by</dt><dd>{{ credential.institution.name }} ({{ credential.institution.code }}){% if credential.institution.is_verified %} {{ ui.badge('approved', 'verified institution') }}{% endif %}{% if credential.institution.website %}<br><a class="small" href="{{ credential.institution.website }}" rel="noopener nofollow" target="_blank">{{ credential.institution.website }}</a>{% endif %}</dd>
+      <dt>Issue date</dt><dd>{{ credential.issue_date|date }}</dd>
+      {% if credential.expiry_date %}<dt>Expiry date</dt><dd>{{ credential.expiry_date|date }}</dd>{% endif %}
+      {% if credential.description %}<dt>Description</dt><dd>{{ credential.description }}</dd>{% endif %}
+      <dt>Document fingerprint</dt><dd><div class="copy-field"><span title="SHA-256">{{ credential.document_sha256 }}</span><button type="button" class="btn btn-ghost btn-sm" data-copy="{{ credential.document_sha256 }}" aria-label="Copy fingerprint">{{ ui.icon("copy") }}</button></div></dd>
+    </dl>
+    {% if credential.replaced_by %}<div class="alert alert-warning mt-1">{{ ui.icon("refresh") }}<span>Current version: <a href="{{ url_for('verification.credential_page', credential_id=credential.replaced_by.credential_id) }}">{{ credential.replaced_by.credential_id }}</a></span></div>{% endif %}
+  </section>
+
+  <section class="card" id="proof">
+    <div class="card-header"><div><h2>Cryptographic proof</h2><p>Independent checks that the record above is exactly what the institution issued.</p></div>
+      <div class="actions"><a class="btn btn-secondary btn-sm" href="{{ url_for('verification.receipt', credential_id=credential.credential_id) }}">{{ ui.icon("file") }}Receipt</a><a class="btn btn-secondary btn-sm" href="{{ url_for('verification.proof', credential_id=credential.credential_id) }}">{{ ui.icon("download") }}Proof bundle</a></div></div>
+    <ul class="list">
+      <li class="list-item" data-trust="signature">
+        <span class="list-icon">{{ ui.icon("lock") }}</span>
+        <div class="grow"><div class="cell-title">Digital signature</div>
+          <div class="cell-sub">{% if signature.state == 'valid' %}Ed25519 signature verified against the platform public key (key <span class="mono">{{ signature.key_id }}</span>).
+            {% elif signature.state == 'invalid' %}The Ed25519 signature does not match the current record: the details were changed after signing.
+            {% elif signature.state == 'legacy-valid' %}Legacy HMAC signature: valid, but it can only be checked by the vault itself.
+            {% elif signature.state == 'legacy-invalid' %}The legacy HMAC signature does not match this record.
+            {% elif signature.state == 'unknown-key' %}Signed with a key that is no longer published ({{ signature.key_id }}).
+            {% else %}No signature is recorded for this credential.{% endif %}</div></div>
+        {{ ui.badge({'valid': 'valid', 'legacy-valid': 'info', 'invalid': 'invalid', 'legacy-invalid': 'invalid'}.get(signature.state, 'pending'), {'valid': 'verified', 'legacy-valid': 'legacy', 'invalid': 'invalid', 'legacy-invalid': 'invalid', 'unknown-key': 'unknown key'}.get(signature.state, 'missing')) }}
+      </li>
+      <li class="list-item" data-trust="anchor">
+        <span class="list-icon">{{ ui.icon("blocks") }}</span>
+        <div class="grow"><div class="cell-title">Blockchain anchor</div>
+          <div class="cell-sub">
+            {% if anchoring.state == 'anchored' %}{% set a = anchoring.anchor %}Included in a batch of {{ a.item_count }} credential(s); Merkle proof ({{ anchoring.steps }} step{{ '' if anchoring.steps == 1 else 's' }}) verified against root <span class="mono" title="{{ a.audit_root }}">{{ a.audit_root[:12] }}…</span>.
+              {% if a.tx_hash %}Anchored on <strong>{{ a.network }}</strong>{% if a.block_number %} in block {{ a.block_number }}{% endif %}, {{ a.anchored_at|datetime }}.{% if a.explorer_url %} <a href="{{ a.explorer_url }}" rel="noopener" target="_blank">View transaction {{ ui.icon("external") }}</a>{% else %} <span class="mono">{{ a.tx_hash[:18] }}…</span>{% endif %}
+              {% else %}Recorded in the {{ a.network|lower }} on {{ a.anchored_at|datetime }}.{% endif %}
+            {% elif anchoring.state == 'altered' %}The current record does not match the anchored Merkle leaf: it was changed after anchoring.
+            {% else %}Not yet anchored. Credentials are anchored in periodic batches.{% endif %}</div></div>
+        {{ ui.badge({'anchored': 'valid', 'altered': 'invalid'}.get(anchoring.state, 'pending'), {'anchored': 'on-chain' if anchoring.anchor and anchoring.anchor.tx_hash else 'anchored', 'altered': 'altered'}.get(anchoring.state, 'pending')) }}
+      </li>
+    </ul>
+    <p class="small muted mb-0">Verify independently: download the proof bundle and run <code>python blockchain/verify_proof.py &lt;bundle&gt; [certificate.pdf]</code>, or fetch the <a href="{{ url_for('verification.signing_key') }}">public signing key</a>.</p>
+  </section>
+
+  <div class="grid-2">
+    <section class="card">
+      <h2>Timeline</h2>
+      <ol class="timeline">
+        {% for event in timeline %}<li class="timeline-{{ event.tone }}"><div class="cell-title">{{ event.label }}</div><div class="cell-sub">{{ event.date|date }}{% if event.detail %} · {{ event.detail }}{% endif %}</div></li>{% endfor %}
+      </ol>
+    </section>
+    <section class="card center">
+      <h2>QR code</h2>
+      <img class="qr" src="{{ url_for('verification.qr_code', credential_id=credential.credential_id) }}" alt="QR code linking to this verification page" width="160" height="160">
+      <p class="small muted">Scanning opens this page.</p>
+      <a class="btn btn-secondary btn-sm" href="{{ url_for('verification.qr_code', credential_id=credential.credential_id) }}" download>{{ ui.icon("download") }}Download QR</a>
+    </section>
+  </div>
+
+  <section class="card" id="compare">
+    <div class="card-header"><div><h2>Check a document</h2><p>Upload the PDF you were given. It is fingerprinted and compared, then discarded; nothing is stored.</p></div></div>
+    {% if comparison %}
+      <div class="alert {{ 'alert-success' if comparison.matches else 'alert-error' }}">{{ ui.icon("check" if comparison.matches else "x") }}<span><strong>{{ comparison.filename }}</strong> {{ "matches the original exactly." if comparison.matches else "does not match the original." }}<br><span class="mono small">SHA-256 {{ comparison.sha256 }}</span></span></div>
+    {% endif %}
+    <form method="post" action="{{ url_for('verification.credential_compare_page', credential_id=credential.credential_id) }}#compare" enctype="multipart/form-data">{{ ui.csrf() }}
+      {{ ui.dropzone("document", label="Drop the certificate PDF here or click to browse", hint="Compared with the SHA-256 fingerprint recorded at issuance") }}
+      <div class="form-actions"><button class="btn">{{ ui.icon("shield") }}Compare document</button></div>
+    </form>
+  </section>
+</div>
+{% endblock %}

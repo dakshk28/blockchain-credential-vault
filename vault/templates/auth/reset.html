@@ -1,0 +1,12 @@
+{% extends "base.html" %}{% set layout = "public" %}{% block title %}Choose a new password · Academic Credential Vault{% endblock %}
+{% block content %}
+<div class="narrow"><div class="auth-card">
+  <div class="head"><div class="brand-mark">{{ ui.icon("lock") }}</div><h1>Choose a new password</h1></div>
+  {% if error %}<div class="alert alert-error" role="alert">{{ ui.icon("alert") }}<span>{{ error }}</span></div>{% endif %}
+  <form method="post">{{ ui.csrf() }}
+    <div class="field"><label for="password">New password</label><input id="password" name="password" type="password" minlength="12" autocomplete="new-password" required data-strength><div class="password-meter"><span></span></div><div class="hint">At least 12 characters, including a digit.</div></div>
+    <div class="field"><label for="confirm">Confirm password</label><input id="confirm" name="confirm" type="password" minlength="12" autocomplete="new-password" required></div>
+    <button class="btn btn-block btn-lg">Change password</button>
+  </form>
+</div></div>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends "base.html" %}{% set layout = "public" %}{% block title %}Verification receipt {{ reference }}{% endblock %}
+{% block content %}
+{% set ok = status == 'active' and signature.state in ('valid', 'legacy-valid') and anchoring.state != 'altered' %}
+<div class="medium receipt">
+  <div class="flex between no-print mb-1"><a class="btn btn-ghost" href="{{ url_for('verification.credential_page', credential_id=credential.credential_id) }}">← Back</a><button type="button" class="btn" data-print>{{ ui.icon("download") }}Print or save as PDF</button></div>
+  <section class="card">
+    <div class="flex between"><div class="brand"><span class="brand-mark">{{ ui.icon("shield") }}</span><span>Academic Credential Vault</span></div><div class="small muted right">Verification receipt<br><span class="mono">{{ reference }}</span></div></div>
+    <hr>
+    <div class="verdict verdict-{{ 'active' if ok else ('expired' if status == 'expired' else 'revoked') }}">{{ ui.icon("check" if ok else "alert", "icon-xl") }}<div><h1>{{ "Credential verified" if ok else "Credential not valid" }}</h1><p>Status at time of check: <strong>{{ status }}</strong></p></div></div>
+    <dl class="dl">
+      <dt>Checked at</dt><dd>{{ checked_at.strftime("%d %B %Y, %H:%M:%S") }} UTC</dd>
+      <dt>Credential ID</dt><dd class="mono">{{ credential.credential_id }}</dd>
+      <dt>Credential</dt><dd>{{ credential.title }} · {{ credential.programme }}</dd>
+      <dt>Issued by</dt><dd>{{ credential.institution.name }} ({{ credential.institution.code }}){% if credential.institution.is_verified %}, verified institution{% endif %}</dd>
+      <dt>Issue date</dt><dd>{{ credential.issue_date|date }}{% if credential.expiry_date %} · expires {{ credential.expiry_date|date }}{% endif %}</dd>
+      <dt>Document SHA-256</dt><dd class="mono small">{{ credential.document_sha256 }}</dd>
+      <dt>Signature</dt><dd>{{ signature.algorithm or "none" }}: {{ signature.state|replace('-', ' ') }}{% if signature.key_id %} (key {{ signature.key_id }}){% endif %}</dd>
+      <dt>Blockchain anchor</dt><dd>{{ anchoring.state }}{% if anchoring.anchor %}: {{ anchoring.anchor.network }}{% if anchoring.anchor.tx_hash %}, tx <span class="mono small">{{ anchoring.anchor.tx_hash }}</span>{% endif %}{% endif %}</dd>
+    </dl>
+    <hr>
+    <div class="flex between"><p class="small muted mb-0">Re-check at any time by scanning the code or visiting<br><span class="mono">{{ url_for('verification.credential_page', credential_id=credential.credential_id, _external=True) }}</span></p>
+      <img class="qr qr-sm" src="{{ url_for('verification.qr_code', credential_id=credential.credential_id) }}" alt="Verification QR code" width="110" height="110"></div>
+  </section>
+</div>
+{% endblock %}

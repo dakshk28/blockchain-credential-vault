@@ -1,0 +1,87 @@
+{% extends "base.html" %}{% block title %}Workspace · Academic Credential Vault{% endblock %}
+{% block breadcrumb %}University / Workspace{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div><div class="eyebrow">{{ institution.code }}</div><h1>{{ institution.name }}</h1><p>Manage student profiles and issue certificates securely.</p></div>
+</div>
+<div class="stats">
+  {{ ui.stat(counts.active, "Active credentials", "award", "success") }}
+  {{ ui.stat(counts.revoked, "Revoked", "ban", "danger") }}
+  {{ ui.stat(counts.replaced, "Replaced", "refresh", "warning") }}
+  {{ ui.stat(students|length, "Student profiles", "users") }}
+</div>
+
+<div class="grid-3-1">
+  <section class="card" id="issue">
+    <div class="card-header"><div><h2>Issue a certificate</h2><p>The PDF's SHA-256 fingerprint is recorded and signed at issuance.</p></div></div>
+    {% if students %}
+    <form method="post" action="{{ url_for('university.issue_page') }}" enctype="multipart/form-data">{{ ui.csrf() }}
+      <div class="form-row">
+        <div class="field"><label for="student_profile_id">Student</label><select id="student_profile_id" name="student_profile_id" required>{% for s in students %}<option value="{{ s.id }}">{{ s.student_identifier }}{% if s.user_id %} · linked{% endif %}</option>{% endfor %}</select></div>
+        {% if templates %}<div class="field"><label for="template">Template <span class="optional">(optional)</span></label><select id="template" data-template-select><option value="">— None —</option>{% for t in templates %}<option data-title="{{ t.title }}" data-programme="{{ t.programme }}" data-description="{{ t.description or '' }}">{{ t.name }}</option>{% endfor %}</select></div>{% endif %}
+      </div>
+      <div class="form-row">
+        <div class="field"><label for="title">Credential title</label><input id="title" name="title" required placeholder="Bachelor of Technology"></div>
+        <div class="field"><label for="programme">Programme</label><input id="programme" name="programme" required placeholder="Computer Science and Engineering"></div>
+      </div>
+      <div class="field"><label for="description">Description <span class="optional">(optional)</span></label><textarea id="description" name="description" rows="2"></textarea></div>
+      <div class="form-row">
+        <div class="field"><label for="issue_date">Issue date</label><input id="issue_date" name="issue_date" type="date"><div class="hint">Defaults to today.</div></div>
+        <div class="field"><label for="expiry_date">Expiry date <span class="optional">(optional)</span></label><input id="expiry_date" name="expiry_date" type="date"></div>
+      </div>
+      <fieldset class="field segmented" data-mode-switch>
+        <legend class="label">Certificate document</legend>
+        <label><input type="radio" name="document_mode" value="upload" checked> Upload a PDF</label>
+        <label><input type="radio" name="document_mode" value="generate"> Generate automatically</label>
+      </fieldset>
+      <div class="field" data-mode="upload">{{ ui.dropzone("document", required=False) }}</div>
+      <div class="field" data-mode="generate" hidden><label for="recipient_name">Recipient name</label><input id="recipient_name" name="recipient_name" placeholder="Leave blank to use the linked student's account name"><div class="hint">A branded PDF with your logo, colours, and an embedded verification QR code is created and fingerprinted.</div></div>
+      <button class="btn btn-lg">{{ ui.icon("shield") }}Issue certificate</button>
+    </form>
+    {% else %}
+      {% call ui.empty("users", "Add a student first", "Credentials are issued to student profiles in your institution.") %}{% endcall %}
+    {% endif %}
+  </section>
+
+  <section class="card">
+    <h2>Add a student</h2>
+    <p class="muted small">Link an existing student account by email so the credential appears in their vault.</p>
+    <form method="post" action="{{ url_for('university.create_student_page') }}">{{ ui.csrf() }}
+      <div class="field"><label for="student_identifier">Student identifier</label><input id="student_identifier" name="student_identifier" placeholder="e.g. CS-2026-001" required></div>
+      <div class="field"><label for="student_email">Student account email <span class="optional">(optional)</span></label><input id="student_email" name="student_email" type="email"></div>
+      <button class="btn btn-block">{{ ui.icon("user-plus") }}Add student</button>
+    </form>
+  </section>
+</div>
+
+<section class="card card-flush" id="students">
+  <div class="card-header"><div><h2>Student profiles</h2><p>{{ student_page.total }} {{ "match" if search else "in total" }}</p></div>
+    <form method="get" class="search" action="{{ url_for('university.workspace') }}#students">{{ ui.icon("search") }}<input type="search" name="q" value="{{ search }}" placeholder="Search identifiers" aria-label="Search students"></form>
+  </div>
+  {% if student_page.items %}
+  <div class="table-wrap mt-1"><table class="table"><thead><tr><th>Identifier</th><th>Profile</th><th>Account</th></tr></thead><tbody>
+    {% for s in student_page.items %}
+    <tr data-student-row><td class="cell-title">{{ s.student_identifier }}</td><td class="subtle">#{{ s.id }}</td>
+      <td>{% if s.user_id %}{{ ui.badge('linked') }}{% else %}
+        <form method="post" action="{{ url_for('university.link_student_page', student_id=s.id) }}" class="input-group">{{ ui.csrf() }}<input name="student_email" type="email" placeholder="Student account email" required aria-label="Student account email"><button class="btn btn-secondary btn-sm">{{ ui.icon("link") }}Link</button></form>
+      {% endif %}</td></tr>
+    {% endfor %}
+  </tbody></table></div>
+  {{ ui.pagination(student_page, 'university.workspace') }}
+  {% else %}
+    {% call ui.empty("users", "No student profiles" ~ (' match "' ~ search ~ '"' if search else " yet")) %}{% endcall %}
+  {% endif %}
+</section>
+
+<section class="card card-flush">
+  <div class="card-header"><div><h2>Recent credentials</h2><p>The ten most recently issued.</p></div>{% if has_endpoint('university.credentials_page') %}<a class="btn btn-secondary btn-sm" href="{{ url_for('university.credentials_page') }}">View all</a>{% endif %}</div>
+  {% if credentials %}
+  <div class="table-wrap mt-1"><table class="table"><thead><tr><th>Credential</th><th>Student</th><th>Issued</th><th>Status</th><th></th></tr></thead><tbody>
+    {% for c in credentials %}
+    <tr><td><div class="cell-title">{{ c.title }}</div><div class="cell-sub mono">{{ c.credential_id }}</div></td><td>{{ c.student_profile.student_identifier if c.student_profile else "—" }}</td><td>{{ c.issue_date|date }}</td><td>{{ ui.badge(c.effective_status) }}</td>
+      <td><a class="btn btn-ghost btn-sm" href="{{ url_for('verification.portal', id=c.credential_id) if has_endpoint('verification.portal') else url_for('verification.verify', credential_id=c.credential_id) }}">Verify</a></td></tr>
+    {% endfor %}
+  </tbody></table></div>
+  {% else %}{% call ui.empty("award", "No credentials issued yet") %}{% endcall %}{% endif %}
+</section>
+{% endblock %}

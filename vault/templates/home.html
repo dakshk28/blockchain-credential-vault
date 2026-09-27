@@ -1,0 +1,53 @@
+{% extends "base.html" %}{% set layout = "public" %}
+{% block content %}
+<section class="hero">
+  <div>
+    <div class="eyebrow">Tamper-evident academic records</div>
+    <h1>Academic credentials you can <span class="accent">prove</span>, not just print.</h1>
+    <p class="lead">Verified universities issue digitally fingerprinted certificates. Students keep them in a private vault and share them securely. Anyone can check a credential in seconds.</p>
+    <div class="actions">
+      {% if current_user.is_authenticated %}
+        <a class="btn btn-lg" href="{{ url_for('auth.dashboard') }}">Go to dashboard {{ ui.icon("arrow-right") }}</a>
+      {% else %}
+        <a class="btn btn-lg" href="{{ url_for('auth.register_page') }}">Create student account</a>
+        <a class="btn btn-lg btn-secondary" href="{{ url_for('university.register') }}">{{ ui.icon("building") }}Register a university</a>
+      {% endif %}
+    </div>
+    <div class="trust-row"><span>{{ ui.icon("check") }}SHA-256 document fingerprints</span><span>{{ ui.icon("check") }}Hash-chained audit ledger</span><span>{{ ui.icon("check") }}QR-code verification</span></div>
+  </div>
+  <div class="hero-card">
+    <h2>{{ ui.icon("search") }}Verify a credential</h2>
+    <p class="muted small">Enter the credential ID printed on the certificate or encoded in its QR code.</p>
+    {% if has_endpoint('verification.portal') %}
+    <form method="get" action="{{ url_for('verification.portal') }}">
+      <div class="field"><label for="hero-id">Credential ID</label><input id="hero-id" name="id" placeholder="ACV-2026-XXXXXXXXXX" required></div>
+      <button class="btn btn-block">Check credential</button>
+    </form>
+    {% else %}
+    <p class="muted">Use <code>/verify/&lt;credential-id&gt;</code> to check a credential.</p>
+    {% endif %}
+  </div>
+</section>
+
+<div class="section-title"><h2>One platform, three roles</h2><p>Each role sees only what it is permitted to see.</p></div>
+<div class="grid">
+  <div class="feature"><div class="stat-icon">{{ ui.icon("graduation") }}</div><h3>Students</h3><p>Receive credentials in a private vault, download originals, and share time-limited verification links with employers.</p></div>
+  <div class="feature"><div class="stat-icon success">{{ ui.icon("building") }}</div><h3>Universities</h3><p>After administrator verification, issue single or bulk credentials, use templates, and revoke or replace records with a full audit trail.</p></div>
+  <div class="feature"><div class="stat-icon warning">{{ ui.icon("shield") }}</div><h3>Verifiers</h3><p>Check status by ID or QR code and upload a copy to confirm it has not been modified by a single byte.</p></div>
+</div>
+
+<div class="section-title"><h2>How it works</h2></div>
+<div class="steps">
+  <div class="step"><h3>Issue</h3><p>A verified university uploads the certificate. Its SHA-256 fingerprint is recorded and signed.</p></div>
+  <div class="step"><h3>Store</h3><p>The document is stored privately. Integrity monitoring detects any change to the stored file.</p></div>
+  <div class="step"><h3>Share</h3><p>The student shares the credential ID, QR code, or an expiring share link.</p></div>
+  <div class="step"><h3>Verify</h3><p>Anyone confirms status and authenticity. Every action is written to a tamper-evident ledger.</p></div>
+</div>
+
+{% if not current_user.is_authenticated %}
+<section class="cta">
+  <div><h2>Ready to issue trustworthy credentials?</h2><p>Universities are reviewed by an administrator before they can issue.</p></div>
+  <div class="actions"><a class="btn" href="{{ url_for('university.register') }}">Register a university</a><a class="btn btn-secondary" href="{{ url_for('auth.login_page') }}">Log in</a></div>
+</section>
+{% endif %}
+{% endblock %}
