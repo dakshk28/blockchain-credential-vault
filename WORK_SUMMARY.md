@@ -320,3 +320,16 @@ Not done: screenshots for the report. Capture them while following `docs/final-d
 | UI | One inline-CSS line, JSON responses for key flows | Design system, role-aware shell, dark mode, mobile, 25+ pages, strict CSP |
 | Features | JSON-only verify, share, revoke, integrity, and audit | Full UI for all of them, plus claims, generated certificates, branding, email, password reset, receipts, expiry reminders |
 | Tests | 19 | **138 (92% coverage)**, with CI on SQLite and PostgreSQL |
+
+## CI fix — PostgreSQL job (27 September 2026)
+
+The first GitHub Actions run failed its PostgreSQL job. Running PostgreSQL 16 locally reproduced the failure and uncovered three further bugs that only appear on PostgreSQL:
+
+1. **Schema drift** (the CI failure). `share_link.token` had both a unique constraint from the original migration and the unique index the model declares, so `flask db check` reported drift. Migration `a9c4e7d2b615` drops the redundant constraint; it affects PostgreSQL only.
+2. **CLI crash.** `seed-demo` and `send-expiry-reminders` built email links with `url_for(_external=True)` outside a request. `vault/urls.py: external_url()` now falls back to the new `PUBLIC_BASE_URL` setting.
+3. **Audit chain broken on non-UTC servers.** PostgreSQL returns `timestamptz` in the session time zone (IST, +05:30). The hash input used that local text, so every event failed validation and anchoring was refused. Timestamps are now converted to UTC before hashing, so existing hashes remain valid.
+4. **Expired share links valid for an extra 5½ hours in India.** Expiry checks relabelled IST times as UTC instead of converting them. A shared `vault/timeutil.py: as_utc()` now handles share links, lockout, the audit chain, and date display (always shown in UTC).
+
+The test fixtures now release sessions before `drop_all` (PostgreSQL otherwise blocks). `TEST_DATABASE_URL` runs the whole suite on PostgreSQL, and CI does this with `PGTZ=Asia/Kolkata`. A regression test covers CLI links without a request.
+
+Result: **139 passed on SQLite and 139 passed on PostgreSQL 16** (IST session). The full CI PostgreSQL sequence (upgrade, check, seed, anchor, integrity scan, downgrade to base, re-upgrade) passes locally.

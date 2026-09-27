@@ -3,7 +3,7 @@
 <div class="medium">
   <section class="verdict verdict-{{ 'active' if status == 'active' else ('expired' if status == 'expired' else ('replaced' if status == 'replaced' else 'revoked')) }}">
     {{ ui.icon("check" if status == 'active' else "alert", "icon-xl") }}
-    <div><h1>{{ holder.full_name }} shared a {{ "valid" if status == 'active' else status }} credential</h1><p>This private link was created by the credential holder and expires {{ link.expires_at|datetime }} (UTC).</p></div>
+    <div><h1>{{ holder.full_name }} shared a {{ "valid" if status == 'active' else status }} credential</h1><p>This private link was created by the credential holder and expires {{ link.expires_at|datetime }}.</p></div>
   </section>
   <section class="card">
     <div class="card-header"><div><div class="eyebrow">{{ credential.institution.name }}</div><h2>{{ credential.title }}</h2><p>{{ credential.programme }}</p></div>{{ ui.badge(status) }}</div>

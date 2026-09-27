@@ -6,6 +6,7 @@ from flask_login import current_user
 from vault.audit.services import append_event
 from vault.auth.decorators import roles_required
 from vault.extensions import db
+from vault.timeutil import as_utc
 from vault.models import ClaimRequest, Credential, Institution, Notification, ShareLink, StudentProfile
 
 bp = Blueprint("student", __name__, url_prefix="/student")
@@ -63,7 +64,7 @@ def revoke_share(token):
 @bp.get("/shared/<token>")
 def shared_credential(token):
     link = ShareLink.query.filter_by(token=token, revoked=False).first_or_404()
-    if link.expires_at.replace(tzinfo=timezone.utc) < datetime.now(timezone.utc): abort(410)
+    if as_utc(link.expires_at) < datetime.now(timezone.utc): abort(410)
     credential = db.session.get(Credential, link.credential_id)
     return jsonify(credential_id=credential.credential_id, title=credential.title, programme=credential.programme, issue_date=credential.issue_date.isoformat(), status=credential.effective_status, expires_at=link.expires_at.isoformat())
 
@@ -82,7 +83,7 @@ def shares_page():
     links = ShareLink.query.filter_by(student_user_id=current_user.id).order_by(ShareLink.id.desc()).all()
     now = datetime.now(timezone.utc)
     for link in links:
-        link.state = "revoked" if link.revoked else ("expired" if link.expires_at.replace(tzinfo=timezone.utc) < now else "active")
+        link.state = "revoked" if link.revoked else ("expired" if as_utc(link.expires_at) < now else "active")
         link.credential = db.session.get(Credential, link.credential_id)
     credentials = [c for c in _student_credentials() if c.effective_status == "active"]
     return render_template("student/shares.html", links=links, credentials=credentials, durations=SHARE_DURATIONS, selected=request.args.get("credential", ""))

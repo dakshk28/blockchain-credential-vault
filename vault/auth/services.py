@@ -3,11 +3,8 @@ from datetime import datetime, timedelta, timezone
 from flask import current_app
 
 from vault.audit.services import append_event
+from vault.timeutil import as_utc
 from vault.models import User
-
-
-def _as_utc(moment):
-    return moment if moment.tzinfo else moment.replace(tzinfo=timezone.utc)
 
 
 def authenticate(email, password):
@@ -18,7 +15,7 @@ def authenticate(email, password):
     email = (email or "").strip().lower()
     user = User.query.filter_by(email=email).first()
     now = datetime.now(timezone.utc)
-    if user and user.locked_until and _as_utc(user.locked_until) > now:
+    if user and user.locked_until and as_utc(user.locked_until) > now:
         append_event("login_blocked_locked", user.id, {})
         return None, "locked"
     if not user or not user.is_active or not user.check_password(password or ""):
@@ -36,7 +33,7 @@ def authenticate(email, password):
 
 # ---------- Password rules and signed email tokens ----------
 
-from flask import url_for
+from vault.urls import external_url
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 
 from vault.extensions import db
@@ -81,10 +78,10 @@ def user_from_verify_token(token):
 
 
 def queue_verification_email(user):
-    link = url_for("auth.verify_email", token=make_verify_token(user), _external=True)
+    link = external_url("auth.verify_email", token=make_verify_token(user))
     queue_email(user.email, "Confirm your email address", f"Hello {user.full_name},\n\nConfirm your email address to receive credential notifications and submit claims:\n{link}\n\nThis link expires in 3 days.\n")
 
 
 def queue_reset_email(user):
-    link = url_for("auth.reset_password", token=make_reset_token(user), _external=True)
+    link = external_url("auth.reset_password", token=make_reset_token(user))
     queue_email(user.email, "Reset your password", f"Hello {user.full_name},\n\nUse this link within one hour to choose a new password:\n{link}\n\nIf you did not ask for this, ignore this email; your password is unchanged.\n")

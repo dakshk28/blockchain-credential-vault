@@ -1,9 +1,8 @@
 """In-app notifications, mirrored to email when the recipient has a verified address."""
-from flask import url_for
-
 from vault.extensions import db
 from vault.mail import queue_email
 from vault.models import Notification, User
+from vault.urls import external_url
 
 SUBJECTS = {
     "credential_issued": "A new credential is in your vault",
@@ -19,5 +18,5 @@ def notify(user_id, event_type, message):
     db.session.add(Notification(user_id=user_id, event_type=event_type, message=message))
     user = db.session.get(User, user_id)
     if user and user.email_verified:
-        link = url_for("student.vault_page", _external=True)
+        link = external_url("student.vault_page")
         queue_email(user.email, SUBJECTS.get(event_type, "Academic Credential Vault update"), f"Hello {user.full_name},\n\n{message}\n\nOpen your vault: {link}\n")

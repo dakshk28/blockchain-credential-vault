@@ -5,12 +5,14 @@ from datetime import datetime, timezone
 from sqlalchemy import text
 
 from vault.extensions import db
+from vault.timeutil import as_utc
 from vault.models import AuditEvent
 
 
 def _hash(event_type, actor_id, metadata, created_at, previous_hash):
-    if created_at.tzinfo is None:
-        created_at = created_at.replace(tzinfo=timezone.utc)
+    # Hash the instant in UTC: PostgreSQL returns timestamptz in the session time zone (e.g. +05:30), and
+    # SQLite returns naive values, but the same moment must always produce the same hash.
+    created_at = as_utc(created_at)
     payload = {"actor_user_id": actor_id, "created_at": created_at.isoformat(), "event_type": event_type, "metadata": metadata, "previous_event_hash": previous_hash}
     return hashlib.sha256(json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
 

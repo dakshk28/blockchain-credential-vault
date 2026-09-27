@@ -88,14 +88,11 @@ def add_signature(credential):
 
 
 def generate_certificate(institution_id, public_id, recipient, title, programme, issue_date, expiry_date):
-    from flask import url_for
     from vault.credentials.certificates import render_certificate
     from vault.models import Institution
+    from vault.urls import external_url
     institution = db.session.get(Institution, institution_id)
-    try:
-        verify_url = url_for("verification.credential_page", credential_id=public_id, _external=True)
-    except RuntimeError:  # outside a request (CLI): fall back to a relative link
-        verify_url = f"/credential/{public_id}"
+    verify_url = external_url("verification.credential_page", credential_id=public_id)
     logo = current_app.config["UPLOAD_DIRECTORY"] / "logos" / institution.logo_key if institution.logo_key else None
     content = render_certificate(institution=institution, recipient=recipient, title=title, programme=programme, issue_date=issue_date, expiry_date=expiry_date, credential_id=public_id, verify_url=verify_url, logo_path=logo)
     screen_pdf(content)

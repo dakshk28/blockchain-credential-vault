@@ -3,6 +3,7 @@ from flask import current_app, request
 from flask_login import current_user
 
 from vault.models import InstitutionVerificationRequest, Notification
+from vault.timeutil import as_utc
 
 # (section, label, endpoint, icon). Entries whose endpoint is not registered are skipped,
 # so navigation grows automatically as features are added.
@@ -65,8 +66,8 @@ def register_ui(app):
         return context
 
     @app.template_filter("datetime")
-    def format_datetime(value, fmt="%d %b %Y, %H:%M"):
-        return value.strftime(fmt) if value else "—"
+    def format_datetime(value, fmt="%d %b %Y, %H:%M UTC"):
+        return as_utc(value).strftime(fmt) if value else "—"
 
     @app.template_filter("date")
     def format_date(value, fmt="%d %b %Y"):

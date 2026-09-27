@@ -34,6 +34,8 @@ class Config:
     # Optional antivirus hook, e.g. "clamdscan --no-summary -"; the PDF is piped to stdin and exit code 0 means clean.
     MALWARE_SCAN_COMMAND = os.environ.get("MALWARE_SCAN_COMMAND", "")
     PAGE_SIZE = 20
+    # Base URL for links generated outside a web request (emails and certificates created from the CLI or cron).
+    PUBLIC_BASE_URL = os.environ.get("PUBLIC_BASE_URL", "http://localhost:5000")
     MAIL_BACKEND = os.environ.get("MAIL_BACKEND", "console")
     MAIL_SERVER = os.environ.get("MAIL_SERVER", "localhost")
     MAIL_PORT = int(os.environ.get("MAIL_PORT", 587))
@@ -52,7 +54,7 @@ class DevelopmentConfig(Config):
 
 class TestConfig(Config):
     TESTING = True
-    SQLALCHEMY_DATABASE_URI = "sqlite://"
+    SQLALCHEMY_DATABASE_URI = os.environ.get("TEST_DATABASE_URL", "sqlite://")  # CI also runs the suite on PostgreSQL
     UPLOAD_DIRECTORY = BASE_DIR / "instance" / "test_uploads"
     WTF_CSRF_ENABLED = False
     RATELIMIT_ENABLED = False

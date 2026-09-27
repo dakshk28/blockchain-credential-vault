@@ -174,3 +174,13 @@ def test_demo_reset_rebuilds_demo_data(app, demo):
     with app.app_context():
         assert User.query.filter_by(email="rival@rival.edu").first() is None
         assert Credential.query.count() == 1 and StudentProfile.query.count() == 1
+
+
+def test_cli_commands_build_absolute_links_without_a_request(app, tmp_path):
+    """seed-demo and cron jobs send emails with links outside any request (regression: crashed on PostgreSQL CI)."""
+    app.config.update(SERVER_NAME=None, PUBLIC_BASE_URL="https://vault.example.edu")
+    assert app.test_cli_runner().invoke(args=["seed-demo"]).exit_code == 0
+    with app.app_context():
+        credential = Credential.query.one(); credential.expiry_date = __import__("datetime").date.today(); db.session.commit()
+    assert "Sent 1" in app.test_cli_runner().invoke(args=["send-expiry-reminders"]).output
+    assert "https://vault.example.edu/student/vault" in app.extensions["outbox"][-1].get_content()

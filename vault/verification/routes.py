@@ -8,6 +8,7 @@ from flask import Blueprint, abort, current_app, jsonify, redirect, render_templ
 from vault.chain.services import anchor_status, proof_bundle, signature_status
 from vault.chain.signing import public_key_info
 from vault.extensions import db, limiter
+from vault.timeutil import as_utc
 from vault.models import Credential, Institution, ShareLink, User
 
 bp = Blueprint("verification", __name__)
@@ -129,7 +130,7 @@ def credential_compare_page(credential_id):
 @limiter.limit("60 per minute")
 def shared_page(token):
     link = ShareLink.query.filter_by(token=token).first()
-    if not link or link.revoked or link.expires_at.replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
+    if not link or link.revoked or as_utc(link.expires_at) < datetime.now(timezone.utc):
         abort(410)
     credential = db.session.get(Credential, link.credential_id)
     holder = db.session.get(User, link.student_user_id)
